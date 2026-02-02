@@ -9,3 +9,6 @@ version = "0.1.0"
 [[package]]
 name = "chip8-ui"
 version = "0.1.0"
+dependencies = [
+ "chip8-core",
+]

@@ -5,7 +5,7 @@ pub struct Chip8 {
     // 4 kilobytes of RAM
     memory: [u8; 4096],
     // 64 x 32 pixels monochrome display
-    display: [bool; 64 * 32],
+    pub display: [bool; 64 * 32],
     // program counter
     pc: u16,
     // index register
@@ -74,5 +74,10 @@ impl Chip8 {
                 panic!("operation {} not implemented", op)
             }
         }
+    }
+    pub fn advance_game_loop(&mut self) {
+        let opcode = self.fetch();
+        let (op, x, y, n, nn, nnn) = self.decode(opcode);
+        self.execute(op, x, y, n, nn, nnn);
     }
 }

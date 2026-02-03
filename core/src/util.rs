@@ -2,6 +2,12 @@ use std::{fs::File, io::Read, panic};
 
 use crate::Chip8;
 
+impl Default for Chip8 {
+    fn default() -> Self {
+        return crate::new();
+    }
+}
+
 impl Chip8 {
     pub fn load_rom(&mut self, path: &str) {
         let mut rom = match File::open(path) {
@@ -18,6 +24,5 @@ impl Chip8 {
                 self.memory[0x200 + index] = byte;
             }
         }
-        println!("Loaded rom from {}", path)
     }
 }

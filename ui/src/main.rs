@@ -1,12 +1,14 @@
-use chip8_core;
+mod emulator;
+mod util;
+
+use crate::emulator::Emulator;
 
 fn main() {
-    let mut chip8 = chip8_core::new();
-    chip8.load_rom("test_rom.ch8");
-    for _ in 0..60 {
-        let opcode = chip8.fetch();
-        let (op, x, y, n, nn, nnn) = chip8.decode(opcode);
-        chip8.execute(op, x, y, n, nn, nnn);
+    let mut emulator = Emulator::default();
+    emulator.core.load_rom("test_rom.ch8");
+    let event_loop = util::init_event_loop();
+    match event_loop.run_app(&mut emulator) {
+        Ok(_) => (),
+        Err(e) => panic!("failed to run the 'winit' app. \n{}", e),
     }
-    println!("completed run")
 }

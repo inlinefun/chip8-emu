@@ -11,11 +11,11 @@ pub struct Chip8 {
     // index register
     i: u16,
     // A stack for 16-bit addresses
-    stack: [u16; 16],
-    // 8-bit delay timer
-    delay_timer: u8,
-    // 8-bit sound timer
-    sound_timer: u8,
+    stack: Vec<u16>,
+    // 8-bit delay timer, 16 cuz yes
+    delay_timer: u16,
+    // 8-bit sound timer, 16 cuz yes
+    sound_timer: u16,
     // 16 8-bit (one byte) general-purpose variable registers
     // made 16 cuz yes
     v: [u16; 16],
@@ -27,7 +27,7 @@ pub fn new() -> Chip8 {
         display: [false; 64 * 32],
         pc: 0x200,
         i: 0,
-        stack: [0; 16],
+        stack: vec![],
         delay_timer: 0,
         sound_timer: 0,
         v: [0; 16],
@@ -57,14 +57,43 @@ impl Chip8 {
             (0, 0, 0xE, 0) => self.clear_screen(),
             // 1nnn, jump
             (1, _, _, _) => self.jump_to(nnn),
-            // 6xnn, set register 'x' to 'nn'
+            // 2nnn, call subroutine
+            (0x2, _, _, _) => self.call_subroutine(nnn),
+            // 00EE, return subroutine
+            (0, 0, 0xE, 0xE) => self.return_subroutine(),
+            // 3xnn, skip conditionally
+            (3, _, _, _) => self.skip_if_value_equal(x, nn),
+            // 4xnn, skip conditionally
+            (4, _, _, _) => self.skip_if_value_not_equal(x, nn),
+            // 5xy0, skip conditionally
+            (5, _, _, 0) => self.skip_if_register_equals(x, y),
+            // 9xy0, skip conditionally
+            (9, _, _, 0) => self.skip_if_register_not_equals(x, y),
+            // 6Xnn, set register 'x' to 'nn'
             (6, _, _, _) => self.set_register(x, nn),
-            // 7xnn, add 'nn' to register 'x'
+            // 7Xnn, add 'nn' to register 'x'
             (7, _, _, _) => self.add_value_to_register(x, nn),
-            // annn, set index register to 'nnn'
+            // All arithemetic operations
+            // goes like 8xyn, where n is the identifier per operation
+            (8, _, _, _) => self.handle_arithemetics(x, y, n),
+            // Annn, set index register to 'nnn'
             (0xA, _, _, _) => self.set_index_register(nnn),
-            // dxyn, draw
+            // Bnnn, jump with offset of 'nnn'
+            (0xB, _, _, _) => self.jump_with_offset(nnn),
+            // Cxnn, random number
+            (0xC, _, _, _) => self.random_number(x, nn),
+            // Dxyn, draw
             (0xD, _, _, _) => self.draw(x, y, n),
+            (0xE, _, _, _) => self.skip_if_key(x),
+            (0xF, _, 0, 7) => self.set_to_delay_timer(x),
+            (0xF, _, 1, 5) => self.set_delay_timer(x),
+            (0xF, _, 1, 8) => self.set_sound_timer(x),
+            (0xF, _, 1, 0xE) => self.add_to_index(x),
+            (0xF, _, 0, 0xA) => self.get_key(x),
+            (0xF, _, 2, 9) => self.font_character(x),
+            (0xF, _, 3, 3) => self.decimal_conversion(x),
+            (0xF, _, 5, 5) => self.store_to_memory(x),
+            (0xF, _, 6, 5) => self.load_from_memory(x),
             (_, _, _, _) => {
                 eprintln!("invalid operation.");
                 eprintln!(
